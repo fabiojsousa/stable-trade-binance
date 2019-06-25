@@ -1,0 +1,19 @@
+{
+  "name": "stable-trade-with-usdt-binance",
+  "version": "1.0.0",
+  "description": "Increase USDT balance in binance",
+  "main": "index.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "keywords": [
+    "usdt",
+    "binance"
+  ],
+  "author": "fabiojsousa",
+  "license": "MIT",
+  "dependencies": {
+    "node-binance-api": "^0.9.4",
+    "nodemailer": "^6.2.1"
+  }
+}
