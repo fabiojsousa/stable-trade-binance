@@ -1,6 +1,6 @@
-const nodemailer = require("nodemailer");
-const config = require("./config.json");
-const binance = require("node-binance-api");
+const nodemailer = require("nodemailer")
+const binance = require("./binance")
+const config = require("./config")
 
 class MainControllers {
   sendMail(message) {
@@ -38,7 +38,62 @@ class MainControllers {
   }
 
   formatarLivro(livro) {
-    return JSON.stringify(livro).replace(/,/g, "<br>");
+    return JSON.stringify(livro).replace(/,/g, ",<br>");
+  }
+
+  calcularSaldo(balances, saldoTotalUSDT) {
+    if (saldoTotalUSDT == 0 || saldoTotalUSDT > 0) {
+      saldoTotalUSDT = 0;
+      saldoTotalUSDT =
+        saldoTotalUSDT +
+        parseFloat(balances.USDT.available) +
+        parseFloat(balances.USDT.onOrder);
+
+      return saldoTotalUSDT;
+    }
+  }
+
+  timeTobuy(depthAsks, myBuyPrice, balanceUSDT){
+    const orderBookSell = Object.keys(depthAsks)
+
+    for(let i in orderBookSell)
+      if(orderBookSell[i]<=myBuyPrice){
+        if(depthAsks[orderBookSell[i]]>=balanceUSDT)
+          return [true, balanceUSDT.toFixed(2) - 0.01, orderBookSell[i]]
+        else
+          return [true, depthAsks[orderBookSell[i]], orderBookSell[i]]
+      }
+
+    return [false,'','']
+  }
+
+  discoverCoinToSell(balances, minimumTrade){
+    if (balances.TUSD.available > minimumTrade) return "TUSD";
+    else if (balances.USDC.available > minimumTrade) return "USDC";
+    else if (balances.USDS.available > minimumTrade) return "USDS";
+    else if (balances.PAX.available > minimumTrade) return "PAX";
+    else return "";
+  }
+
+  async getBestPrice(ajusteCompra, ajustVenda, mercados){
+    let mediaPrecosMercados = 0, compra = 0, venda = 0
+
+    let prevDayTUSD = await binance.getPrice("TUSDUSDT"),
+    prevDayUSDC = await binance.getPrice("USDCUSDT"),
+    prevDayUSDT = await binance.getPrice("USDSUSDT"),
+    prevDayPAX = await binance.getPrice("PAXUSDT")
+    
+    mediaPrecosMercados = parseFloat(prevDayTUSD.prevClosePrice) + parseFloat(prevDayUSDC.prevClosePrice) +
+                          parseFloat(prevDayUSDT.prevClosePrice) + parseFloat(prevDayPAX.prevClosePrice)
+
+    mediaPrecosMercados = mediaPrecosMercados/mercados.length
+    compra = mediaPrecosMercados - ajusteCompra
+    venda = compra + ajustVenda
+
+    compra = compra.toFixed(4)
+    venda = venda.toFixed(4)
+
+    return [compra, venda]
   }
 
   calcularSaldo(balances, openOrders) {
@@ -55,34 +110,21 @@ class MainControllers {
     return saldoUSDT
   }
 
-  userAuth() {
-    return binance().options({
-      APIKEY: config.API_KEY,
-      APISECRET: config.SECRET_KEY,
-      useServerTime: true
-    });
-  }
+  showOpenOrders(moeda, saldo, lastPrice, openOrders){
+    let moedaOpenOrders = []
 
-  timeTobuy(depthAsks, sellPrice, balanceUSDT){
-    const orderBookSell = Object.keys(depthAsks)
+    for(let i in openOrders)
+      if(openOrders[i].symbol===moeda)
+        moedaOpenOrders.push(openOrders[i])
+    
+    moeda = moeda.replace("USDT","")
 
-    for(let i in orderBookSell)
-      if(orderBookSell[i]<=sellPrice){
-        if(depthAsks[orderBookSell[i]]>=balanceUSDT)
-          return [true, (balanceUSDT - 0.01).toFixed(2), (orderBookSell[i] - 0.0001).toFixed(4)]
-        else
-          return [true, (depthAsks[orderBookSell[i]] - 0.01).toFixed(2), (orderBookSell[i] - 0.0001).toFixed(4)]
-      }
+    if(moeda.length<4)
+      moeda= " "+moeda
 
-    return [false,'','']
-  }
-
-  discoverCoinToSell(balances, minimumTrade){
-    if (balances.TUSD.available > minimumTrade) return "TUSD";
-    else if (balances.USDC.available > minimumTrade) return "USDC";
-    else if (balances.USDS.available > minimumTrade) return "USDS";
-    else if (balances.PAX.available > minimumTrade) return "PAX";
-    else return "";
+    console.log(`${moeda}: ${saldo}\t${lastPrice}\t${moedaOpenOrders.length > 0 ? 
+      moedaOpenOrders[0].side + " | Total: " + moedaOpenOrders[0].origQty + " | Preço: " +
+      moedaOpenOrders[0].price : ""} ${moedaOpenOrders.length > 1 ? `[+${moedaOpenOrders.length}]` : ""}`)
   }
 }
 
