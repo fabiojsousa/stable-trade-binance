@@ -15,8 +15,8 @@ class MainControllers {
         port: 587,
         secure: false, // true for 465, false for other ports
         auth: {
-          user: config.user, // generated ethereal user
-          pass: config.pass // generated ethereal password
+          user: config.user,
+          pass: config.pass 
         }
       });
 
@@ -79,52 +79,61 @@ class MainControllers {
 
   async getBestPrice(ajusteCompra, ajusteVenda, mercados, indice, topoMaximo){
 
-    /* 
-    //Using last candle strategy
-    let lastCandle = await binance.getCandleData(mercados[indice], true), compra, venda,
-    mostRecentCandle = await binance.getCandleData(mercados[indice], false)
-    
-    if(lastCandle.close>=topoMaximo || lastCandle.close > mostRecentCandle.open){
-      //Caso o preço esteja muito alto, 
-      //Ou o fechamento do candle anterior seja maior que a abertura do candle atual.
-      //=> Irá reduzir o preço de compra para evitar uma entrada muito alta.      
-      compra = lastCandle.close - ajusteCompra*3
-      venda = parseFloat(compra) + ajusteVenda
-    }
-    else{
-      //melhor situação para compra e venda
-      compra = lastCandle.close
-      venda = parseFloat(compra) + ajusteVenda
-    } 
+    //1 - Last candle strategy
+    //2 - prevClosePrice strategy
+    //3 - Last 10 days strategy
+
+    if(config.strategy === 1){
       
-    return [parseFloat(compra).toFixed(4), parseFloat(venda).toFixed(4)]
-    */
-
-    //Using the prevClosePrice strategy
-    let mediaPrecosMercados = 0, compra = 0, venda = 0
-
-    let prevDayTUSD = await binance.getPrice("TUSDUSDT"),
-    prevDayUSDC = await binance.getPrice("USDCUSDT"),
-    prevDayUSDT = await binance.getPrice("USDSUSDT"),
-    prevDayPAX = await binance.getPrice("PAXUSDT")
+      let lastCandle = await binance.getCandleData(mercados[indice], true), compra, venda,
+      mostRecentCandle = await binance.getCandleData(mercados[indice], false)
+      
+      if(lastCandle.close>=topoMaximo || lastCandle.close > mostRecentCandle.open){
+        //Caso o preço esteja muito alto, 
+        //Ou o fechamento do candle anterior seja maior que a abertura do candle atual.
+        //=> Irá reduzir o preço de compra para evitar uma entrada muito alta.      
+        compra = lastCandle.close - ajusteCompra*3
+        venda = parseFloat(compra) + ajusteVenda
+      }
+      else{
+        //melhor situação para compra e venda
+        compra = lastCandle.close
+        venda = parseFloat(compra) + ajusteVenda
+      } 
+        
+      return [parseFloat(compra).toFixed(4), parseFloat(venda).toFixed(4)]
     
-    mediaPrecosMercados = parseFloat(prevDayTUSD.prevClosePrice) + parseFloat(prevDayUSDC.prevClosePrice) +
-                          parseFloat(prevDayUSDT.prevClosePrice) + parseFloat(prevDayPAX.prevClosePrice)
+    } else if(config.strategy === 2){
+      
+      let mediaPrecosMercados = 0, compra = 0, venda = 0
 
-    mediaPrecosMercados = mediaPrecosMercados/mercados.length
+      let prevDayTUSD = await binance.getPrice("TUSDUSDT"),
+      prevDayUSDC = await binance.getPrice("USDCUSDT"),
+      prevDayUSDT = await binance.getPrice("USDSUSDT"),
+      prevDayPAX = await binance.getPrice("PAXUSDT")
+      
+      mediaPrecosMercados = parseFloat(prevDayTUSD.prevClosePrice) + parseFloat(prevDayUSDC.prevClosePrice) +
+                            parseFloat(prevDayUSDT.prevClosePrice) + parseFloat(prevDayPAX.prevClosePrice)
 
-    compra = mediaPrecosMercados - ajusteCompra
+      mediaPrecosMercados = mediaPrecosMercados/mercados.length
 
-    //Irá reduzir o preço de compra para evitar uma entrada muito alta.
-    if(compra > topoMaximo)
-      compra = mediaPrecosMercados - ajusteCompra*3
+      compra = mediaPrecosMercados - ajusteCompra
 
-    venda = compra + ajusteVenda
+      //Irá reduzir o preço de compra para evitar uma entrada muito alta.
+      if(compra > topoMaximo)
+        compra = mediaPrecosMercados - ajusteCompra*3
 
-    compra = compra.toFixed(4)
-    venda = venda.toFixed(4)
+      venda = compra + ajusteVenda
 
-    return [compra, venda]
+      compra = compra.toFixed(4)
+      venda = venda.toFixed(4)
+
+      return [compra, venda]
+    } else if(config.strategy === 3){
+      //Basicamente irá verificar o preço dos últimos 3 dias para ajustar o topo máximo de compra.
+    }
+
+    
   }
 
   calcularSaldo(balances, openOrders) {
