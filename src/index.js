@@ -11,7 +11,7 @@ let availableUSDT = "loading...";
 let estimatedTotalUSDT = "loading...";
 const mercados = ["TUSDUSDT", "USDCUSDT", "USDSUSDT", "PAXUSDT"];
 
-const minimumTrade = 10
+const minimumTrade = 12
 let percentualLucro = "loading..."
 let btcChangePercent = "loading..."
 let btcPrice = "loading...", compra="loading...", venda="loading...";
@@ -47,8 +47,6 @@ setTimeout que chamará novamente a função.*/
       availableUSDT = parseFloat(balances.USDT.available);
       estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
 
-      /*Irá analisar se há algum saldo >= ao minimumTrade estabelecido. Em caso
-      positivo retonará qual é o par da moeda a ser feito a venda*/
       let moedaParaVender = controllers.discoverCoinToSell(balances, minimumTrade);
 
       /*Irá analisar o livro de vendas para saber se há alguma ordem <= ao valor 
@@ -72,11 +70,14 @@ setTimeout que chamará novamente a função.*/
           //o total precisa ter até duas casas decimais, o preço precisa ter até 4 casas decimais
           binance.buy(mercados[i], buyAmount, buyPrice)
 
-          //Atualizar os valores para enviar corretamente no e-mail
+          //Atualizar os valores após a compra
           balances = await binance.getBalance();
           openOrders = await binance.openOrders();
           availableUSDT = parseFloat(balances.USDT.available);
           estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
+
+          //Verficar qual foi a moeda comprada para efetuar a venda logo em seguida
+          moedaParaVender = controllers.discoverCoinToSell(balances, minimumTrade);
 
           controllers.sendMail(
             `Ordem de COMPRA em ${mercados[i]} colocada!<br><br>
@@ -91,7 +92,7 @@ setTimeout que chamará novamente a função.*/
         } catch (e) {
           controllers.sendMail(`Erro ao tentar colocar a ordem de compra. Erro: ${e}`);
         }
-      } else if (
+      } if (
         /*moedaParaVender é descoberta no controller discoverCoinToSell, a venda só 
         acontecerá se o loop do for estiver no mercado equivalente ao da moedaParaVender. 
         A ordem de venda será colocada imediatamente de acordo com o valor 
