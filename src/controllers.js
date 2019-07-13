@@ -162,9 +162,30 @@ class MainControllers {
     if(moeda.length<4)
       moeda= " "+moeda
 
-    console.log(`${moeda}: ${saldo}\t${compra}\t${venda}\t${percentualLucro}\t${lastPrice}\t${moedaOpenOrders.length > 0 ? 
-      moedaOpenOrders[0].side + " | Total: " + moedaOpenOrders[0].origQty + " | Preço: " +
-      moedaOpenOrders[0].price : ""} ${moedaOpenOrders.length > 1 ? `[+${moedaOpenOrders.length-1}]` : ""}`)
+    if(config.showAllOrders){
+      console.log(`${moeda}: ${saldo}\t${compra}\t${venda}\t${percentualLucro}\t${lastPrice}\t${moedaOpenOrders.length > 0 ? 
+        (()=>{
+          let text = ""
+          for(let i in moedaOpenOrders){
+            if(moedaOpenOrders.length > 1){
+              if(i == moedaOpenOrders.length -1){
+                text += "\t\t\t\t\t\t\t\t" + moedaOpenOrders[i].side + " | Total: " + moedaOpenOrders[i].origQty + " | Preço: " + moedaOpenOrders[i].price
+              }
+              else
+                text += moedaOpenOrders[i].side + " | Total: " + moedaOpenOrders[i].origQty + " | Preço: " + moedaOpenOrders[i].price + "\n"
+              
+            }
+            else
+              text += moedaOpenOrders[i].side + " | Total: " + moedaOpenOrders[i].origQty + " | Preço: " + moedaOpenOrders[i].price
+          }
+          return text
+        })() : ""}`)
+    }
+    else{
+      console.log(`${moeda}: ${saldo}\t${compra}\t${venda}\t${percentualLucro}\t${lastPrice}\t${moedaOpenOrders.length > 0 ? 
+        moedaOpenOrders[0].side + " | Total: " + moedaOpenOrders[0].origQty + " | Preço: " +
+        moedaOpenOrders[0].price : ""} ${moedaOpenOrders.length > 1 ? `[+${moedaOpenOrders.length-1}]` : ""}`)
+    }
   }
 }
 
