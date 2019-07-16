@@ -80,8 +80,9 @@ class MainControllers {
   async getBestPrice(ajusteCompra, ajusteVenda, mercados, indice, topoMaximo){
 
     //1 - Last candle strategy
-    //2 - prevClosePrice strategy
-    //3 - Last 10 days strategy
+    //2 - prevClosePrice average strategy
+    //3 - prevClosePrice strategy
+    //4 - Last 10 days strategy
 
     if(config.strategy === 1){
       
@@ -130,7 +131,26 @@ class MainControllers {
 
       return [compra, venda]
     } else if(config.strategy === 3){
-      //Basicamente irá verificar o preço dos últimos 3 dias para ajustar o topo máximo de compra.
+      
+      let compra = 0, venda = 0
+
+      let {prevClosePrice} = await binance.getPrice(mercados[indice])
+
+      compra = prevClosePrice - ajusteCompra
+
+      //Irá reduzir o preço de compra para evitar uma entrada muito alta.
+      if(compra > topoMaximo)
+        compra = prevClosePrice - ajusteCompra*3
+
+      venda = compra + ajusteVenda
+
+      compra = compra.toFixed(4)
+      venda = venda.toFixed(4)
+
+      return [compra, venda]
+
+    }else if(config.strategy ===4){
+      //Basicamente irá verificar o preço dos últimos 10 dias para ajustar o topo máximo de compra.
     }
 
     
