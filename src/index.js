@@ -36,12 +36,19 @@ setTimeout que chamará novamente a função.*/
 
       let prevDay = await binance.getPrice(mercados[i]),
       balances = await binance.getBalance(),
-      openOrders = await binance.openOrders(),
       depth = await binance.getDepth(mercados[i]),
-      prevDayBTC = await binance.getPrice("BTCUSDT")
+      prevDayBTC = await binance.getPrice("BTCUSDT");
+      
+      /**
+       * Para não estourar a cota de solicitações por minutos da API, as requisições das ordens abertas
+       * são feitas individualmente para cada moeda, desta forma a requisição tem peso 1, se solicitar
+       * todas as ordens abertas a requisição tem peso 40.
+       */
+      let openOrders = await binance.openOrders(mercados[i]);
+      
 
       btcChangePercent = prevDayBTC.priceChangePercent;
-      btcPrice = parseFloat(prevDayBTC.lastPrice).toFixed(2)
+      btcPrice = parseFloat(prevDayBTC.lastPrice).toFixed(2);
       percentualLucro = (((venda - compra) * 100) / venda).toFixed(2);
 
       availableUSDT = parseFloat(balances.USDT.available);
@@ -142,5 +149,5 @@ setTimeout que chamará novamente a função.*/
     }
   }
   //Menos que 4 segundos pode acarretar em estouro da cota de requisições por minutos da API da Binance.
-  setTimeout(repeat, 4000)
+  setTimeout(repeat, 1000)
 })()

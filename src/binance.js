@@ -12,13 +12,14 @@ axios.defaults.baseURL = 'https://api.binance.com'
 
 class Requests{
 
-  async openOrders(){
+  async openOrders(symbol){
     //Endpoint description: Get all open orders on a symbol.
     const path = '/api/v3/openOrders'
 
     //parameters required for this request
     let requestParams = {
-      timestamp: new Date().getTime()
+      timestamp: new Date().getTime(),
+      symbol
     }
     requestParams["signature"] = getSignature(requestParams)
 
