@@ -44,8 +44,14 @@ setTimeout que chamará novamente a função.*/
        * são feitas individualmente para cada moeda, desta forma a requisição tem peso 1, se solicitar
        * todas as ordens abertas a requisição tem peso 40.
        */
-      let openOrders = await binance.openOrders(mercados[i]);
-      
+      let openOrders = []
+      for(let k in mercados){
+        let arrOpenOrders = await binance.openOrders(mercados[k])
+
+        if(arrOpenOrders.length > 0)
+          for(let l in arrOpenOrders)
+            openOrders.push(arrOpenOrders[l]) 
+      }
 
       btcChangePercent = prevDayBTC.priceChangePercent;
       btcPrice = parseFloat(prevDayBTC.lastPrice).toFixed(2);
@@ -148,6 +154,5 @@ setTimeout que chamará novamente a função.*/
       console.log("Something went wrong: " +e)
     }
   }
-  //Menos que 4 segundos pode acarretar em estouro da cota de requisições por minutos da API da Binance.
   setTimeout(repeat, 1000)
 })()

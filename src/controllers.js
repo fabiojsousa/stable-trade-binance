@@ -40,18 +40,6 @@ class MainControllers {
     return JSON.stringify(livro).replace(/,/g, ",<br>");
   }
 
-  calcularSaldo(balances, saldoTotalUSDT) {
-    if (saldoTotalUSDT == 0 || saldoTotalUSDT > 0) {
-      saldoTotalUSDT = 0;
-      saldoTotalUSDT =
-        saldoTotalUSDT +
-        parseFloat(balances.USDT.available) +
-        parseFloat(balances.USDT.onOrder);
-
-      return saldoTotalUSDT;
-    }
-  }
-
   timeTobuy(depthAsks, myBuyPrice, balanceUSDT){
     const orderBookSell = Object.keys(depthAsks)
 
