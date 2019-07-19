@@ -132,8 +132,8 @@ class MainControllers {
 
       venda = compra + ajusteVenda
 
-      compra = compra.toFixed(4)
-      venda = venda.toFixed(4)
+      compra = ajuste(compra, 4)
+      venda = ajuste(venda, 4)
 
       return [compra, venda]
 
@@ -195,6 +195,13 @@ class MainControllers {
         moedaOpenOrders[0].price : ""} ${moedaOpenOrders.length > 1 ? `[+${moedaOpenOrders.length-1}]` : ""}`)
     }
   }
+
+}
+
+//Para ajustar as casas decimais dos números sem arredondar o valor
+function ajuste(nr, casas) {
+  const og = Math.pow(10, casas)
+  return Math.floor(nr * og) / og;
 }
 
 module.exports = new MainControllers();

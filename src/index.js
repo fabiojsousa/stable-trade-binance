@@ -2,8 +2,8 @@ const binance = require('./binance')
 const controllers = require("./controllers");
 
 /*===============Para Ajustar os preços compra/venda que deseja===============*/
-const ajusteCompra = 0.002
-const ajustVenda = 0.003
+const ajusteCompra = 0.0035
+const ajustVenda = 0.0045
 /*============================================================================*/
 const topoMaximo = 1.008
 
