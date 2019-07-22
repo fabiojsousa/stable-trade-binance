@@ -25,7 +25,7 @@ setTimeout que chamará novamente a função.*/
     \nUSDT Disponível: ${availableUSDT}\nUSDT Total Estimado: ${estimatedTotalUSDT}
     \nSaldo\t\t\tCompra\tVenda\t%Lucro\tÚltimo Preço\tOrdem Aberta`
   );
-
+  
   //Iniciar análise do mercado para efetuar os traders
   for (let i in mercados) {
     try{
@@ -96,7 +96,7 @@ setTimeout que chamará novamente a função.*/
             `Ordem de COMPRA em ${mercados[i]} colocada!<br><br>
             Preço estipulado: ${compra}<br>
             Preço considerado: ${buyPrice}<br>
-            Montante: ${buyAmount}<br>
+            Montante ${mercados[i].replace('USDT')}: ${buyAmount}<br>
             USDT Disponível: ${availableUSDT}<br>
             USDT Total Estimado: ${estimatedTotalUSDT}<br>
             Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
@@ -129,7 +129,7 @@ setTimeout que chamará novamente a função.*/
           controllers.sendMail(
             `Ordem de VENDA em ${mercados[i]} colocada!<br><br>
             Preço estipulado: ${venda}<br>
-            Montante: ${balanceVenda}<br>
+            Montante ${mercados[i].replace('USDT')}: ${balanceVenda}<br>
             USDT Disponível: ${availableUSDT}<br>
             USDT Total Estimado: ${estimatedTotalUSDT}<br>
             Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
@@ -139,6 +139,21 @@ setTimeout que chamará novamente a função.*/
           controllers.sendMail(`Erro ao tentar colocar a ordem de venda. Erro: ${e}`);
         }
       }
+
+      //Verificar se houve alguma ordem de compra/venda no valor que foi estipulado
+      let recentTraders = await binance.getTradesList(mercados[i]),
+      [ordemExecutada, tipoOrdem, dadosOrdem] = controllers.checkTradesList(recentTraders, compra, venda);
+
+      if(ordemExecutada && moedaParaVender != ""){
+        //isBuyerMaker false == ordem de compra
+        //isBuyerMaker true == ordem de venda
+        controllers.sendMail(`
+          Houve uma ordem de ${tipoOrdem} em ${mercados[i]}!<br>
+          Preço: ${dadosOrdem.price}<br>
+          Quantidade: ${dadosOrdem.qty}
+        `)
+      }
+
       controllers.showOpenOrders(
         mercados[i], 
         balances[mercados[i].replace("USDT", "")].available,

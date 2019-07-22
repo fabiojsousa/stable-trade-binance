@@ -48,7 +48,7 @@ class MainControllers {
         if(depthAsks[orderBookSell[i]]>=balanceUSDT){
           let diferenca = balanceUSDT * orderBookSell[i] - balanceUSDT
           balanceUSDT = balanceUSDT - diferenca
-          return [true, parseFloat(balanceUSDT - 0.01).toFixed(2) , orderBookSell[i]]
+          return [true, ajuste(balanceUSDT, 2) , orderBookSell[i]]
         }
         else
           return [true, depthAsks[orderBookSell[i]], orderBookSell[i]]
@@ -194,6 +194,21 @@ class MainControllers {
         moedaOpenOrders[0].side + " | Total: " + moedaOpenOrders[0].origQty + " | Preço: " +
         moedaOpenOrders[0].price : ""} ${moedaOpenOrders.length > 1 ? `[+${moedaOpenOrders.length-1}]` : ""}`)
     }
+  }
+
+  checkTradesList(recentTraders, compra, venda){
+    //isBuyerMaker false == ordem de compra
+    //isBuyerMaker true == ordem de venda
+
+    for(let i in recentTraders){
+        if(recentTraders[i].isBuyerMaker && recentTraders[i].price>=venda)
+          return [true, "Venda", recentTraders[i]]
+        else if(!recentTraders[i].isBuyerMaker && recentTraders[i].price<=compra)
+          return [true, "Compra", recentTraders[i]]
+    }
+
+    return [false, "", ""]
+    
   }
 
 }

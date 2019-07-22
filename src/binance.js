@@ -121,6 +121,28 @@ class Requests{
     }
   }
 
+  async getTradesList(symbol){
+    //Endpoint description: Get recent trades (up to last 500).
+    const path = '/api/v1/trades'
+
+    //parameters required for this request
+    let requestParams = {
+      symbol,
+      limit: 100
+    }
+
+    try{
+      const response = await axios.get(path, {
+        params: requestParams
+      })
+
+      return response.data
+
+    }catch(e){
+      showError(e, "getTradesList")
+    }
+  }
+  
   async getDepth(symbol){
     /*Endpoint description: Could be adjusted using the parameter limit. 
     Default 100; max 1000. Valid limits:[5, 10, 20, 50, 100, 500, 1000]*/
