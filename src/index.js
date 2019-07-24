@@ -144,13 +144,15 @@ setTimeout que chamará novamente a função.*/
       let recentTraders = await binance.getTradesList(mercados[i]),
       [ordemExecutada, tipoOrdem, dadosOrdem] = controllers.checkTradesList(recentTraders, compra, venda);
 
-      if(ordemExecutada && moedaParaVender != ""){
+      if(ordemExecutada && moedaParaVender != "" || ordemExecutada && tipoOrdem=="Compra"){
         //isBuyerMaker false == ordem de compra
         //isBuyerMaker true == ordem de venda
         controllers.sendMail(`
           Houve uma ordem de ${tipoOrdem} em ${mercados[i]}!<br>
           Preço: ${dadosOrdem.price}<br>
-          Quantidade: ${dadosOrdem.qty}
+          Quantidade: ${dadosOrdem.qty}<br><br>
+          Preços estipulados:<br>
+          Compra: ${compra} | Venda: ${venda}
         `)
       }
 

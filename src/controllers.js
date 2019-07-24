@@ -23,7 +23,7 @@ class MainControllers {
       // send mail with defined transport object
       let info = await transporter.sendMail({
         from: "Bot de trader USDT - Binance", // sender address
-        to: "fjasousa2018@gmail.com", // list of receivers
+        to: config.to, // list of receivers
         subject: "Trade efetuado", // Subject line
         html: `<b>${message}</b>` // html body
       });
@@ -145,12 +145,21 @@ class MainControllers {
   }
 
   calcularSaldo(balances, openOrders) {
-    let saldoUSDT = parseFloat(balances.USDT.available) + parseFloat(balances.USDT.onOrder)
-    let totalOnSellOrder=0
+    //Quando uma ordem de compra é colocada, a Binance já desconta a taxa antes da ordem ser executada.
+    //Quando uma ordem de venda é colocada, a Binance NÃO desconta a taxa até a ordem ser executada.
+
+    let saldoUSDT = parseFloat(balances.USDT.available) + parseFloat(balances.USDT.onOrder),
+    totalOnSellOrder=0;
+
+    const taxaVendaBinance = 0.00075
 
     for(let i in openOrders){
-      if(openOrders[i].side=="SELL")
-        totalOnSellOrder = totalOnSellOrder + openOrders[i].price * openOrders[i].origQty
+      if(openOrders[i].side=="SELL"){
+        let totalOrdem = openOrders[i].price * openOrders[i].origQty,
+        taxa = totalOrdem * taxaVendaBinance;
+        
+        totalOnSellOrder += totalOrdem - taxa
+      }
     }
 
     saldoUSDT = saldoUSDT + totalOnSellOrder
