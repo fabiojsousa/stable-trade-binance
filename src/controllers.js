@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer")
 const binance = require("./binance")
 const config = require("./config")
+const talib = require("talib")
 
 class MainControllers {
   sendMail(message) {
@@ -71,6 +72,7 @@ class MainControllers {
     //2 - prevClosePrice average strategy
     //3 - prevClosePrice strategy
     //4 - Last 10 days strategy
+    //5 - MACD
 
     if(config.strategy === 1){
       
@@ -137,9 +139,60 @@ class MainControllers {
 
       return [compra, venda]
 
-    }else if(config.strategy ===4){
+    } else if(config.strategy ===4){
       //Basicamente irá verificar o preço dos últimos 10 dias para ajustar o topo máximo de compra.
+    } else if(config.strategy===5){
+      //Pegar os dados dos candle de 1h dos últimos 16 dias
+      //Verificar se a linha do MACD está positiva (vindo de uma baixa)
+      //e estabelecer o preço de compra no preço atual do mercado
+
+      let compra, venda, timeTobuy=false;
+
+      const marketData = await binance.getCandleData(mercados[indice])
+      // console.log(marketData.close)
+
+      const outMACD = await (new Promise((resolve, reject) => {
+        talib.execute({
+          name: "MACD",
+          startIdx: 0,
+          endIdx: marketData.close.length - 1,
+          inReal: marketData.close,
+          optInFastPeriod: 12,
+          optInSlowPeriod: 26,
+          optInSignalPeriod: 9
+          }, (err, data) => {
+            // Show the result array
+            // console.log(`${name} Function Results:`);
+            // console.log(data.result.outMACD);
+            if(err)
+              reject(err)
+
+            resolve(data.result.outMACD)
+          });
+      }));
+
+      //outMACD é a linha azul do MACD
+      let i = outMACD.length-1;
+      if(outMACD[i] > 0 && outMACD[i-1] > 0 && outMACD[i-2] < 0){
+        timeTobuy=true;
+      }
+      else
+        return {lastMACD: outMACD[i]};
+      
+
+      if(timeTobuy){
+        let {lastPrice} = await binance.getPrice(mercados[indice])
+
+        compra = lastPrice
+        venda = parseFloat(compra) + config.spread
+
+        return [compra, venda]
+      }
+ 
+      return data.result.outMACD
     }
+
+    
 
     
   }

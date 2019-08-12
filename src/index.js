@@ -1,5 +1,6 @@
 const binance = require('./binance')
 const controllers = require("./controllers");
+const config = require("./config")
 
 /*===============Para Ajustar os preços compra/venda que deseja===============*/
 const ajusteCompra = 0.0035
@@ -20,19 +21,25 @@ let btcPrice = "loading...", compra="loading...", venda="loading...";
 setTimeout que chamará novamente a função.*/
 (async function repeat(){
   console.clear();
+  let now = new Date()
   console.log(
     `BTC 24h change: ${btcChangePercent}%\nBTC Price: ${btcPrice}
     \nUSDT Disponível: ${availableUSDT}\nUSDT Total Estimado: ${estimatedTotalUSDT}
-    \nSaldo\t\t\tCompra\tVenda\t%Lucro\tÚltimo Preço\tOrdem Aberta`
+    \nTime: ${now}\n\nSaldo\t\t\tCompra\tVenda\t%Lucro\tÚltimo Preço\tOrdem Aberta`
   );
   
   //Iniciar análise do mercado para efetuar os traders
   for (let i in mercados) {
     try{
       //Estabelece um preço dinâmico de compra e venda
-      let [bestBuy, bestSell] = await controllers.getBestPrice(ajusteCompra, ajustVenda, mercados, i, topoMaximo)
-      
-      compra = bestBuy, venda = bestSell
+      let {lastMACD} = await controllers.getBestPrice(ajusteCompra, ajustVenda, mercados, i, topoMaximo)
+
+      if(lastMACD){
+        compra=0, venda=0
+      } else {
+          let [bestBuy, bestSell] = await controllers.getBestPrice(ajusteCompra, ajustVenda, mercados, i, topoMaximo)
+          compra = bestBuy, venda = bestSell
+      }
 
       let prevDay = await binance.getPrice(mercados[i]),
       balances = await binance.getBalance(),
@@ -83,25 +90,28 @@ setTimeout que chamará novamente a função.*/
           //o total precisa ter até duas casas decimais, o preço precisa ter até 4 casas decimais
           binance.buy(mercados[i], buyAmount, buyPrice)
 
-          //Atualizar os valores após a compra
-          balances = await binance.getBalance();
-          openOrders = await binance.openOrders();
-          availableUSDT = parseFloat(balances.USDT.available);
-          estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
+          //Aguarda alguns segundos para ter os valores atualizados após a compra
+          setTimeout(async()=>{
+            //Atualizar os valores após a compra
+            balances = await binance.getBalance();
+            openOrders = await binance.openOrders();
+            availableUSDT = parseFloat(balances.USDT.available);
+            estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
 
-          //Verficar qual foi a moeda comprada para efetuar a venda logo em seguida
-          moedaParaVender = controllers.discoverCoinToSell(balances, minimumTrade);
+            //Verficar qual foi a moeda comprada para efetuar a venda logo em seguida
+            moedaParaVender = controllers.discoverCoinToSell(balances, minimumTrade);
 
-          controllers.sendMail(
-            `Ordem de COMPRA em ${mercados[i]} colocada!<br><br>
-            Preço estipulado: ${compra}<br>
-            Preço considerado: ${buyPrice}<br>
-            Montante ${mercados[i].replace('USDT')}: ${buyAmount}<br>
-            USDT Disponível: ${availableUSDT}<br>
-            USDT Total Estimado: ${estimatedTotalUSDT}<br>
-            Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
-            Livro de vendas (asks):<br>${controllers.formatarLivro(depth.asks)}`
-          );
+            controllers.sendMail(
+              `Ordem de COMPRA em ${mercados[i]} colocada!<br><br>
+              Preço estipulado: ${compra}<br>
+              Preço considerado: ${buyPrice}<br>
+              Montante ${mercados[i].replace('USDT')}: ${buyAmount}<br>
+              USDT Disponível: ${availableUSDT}<br>
+              USDT Total Estimado: ${estimatedTotalUSDT}<br>
+              Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
+              Livro de vendas (asks):<br>${controllers.formatarLivro(depth.asks)}`
+            );
+          }, 2000)
         } catch (e) {
           controllers.sendMail(`Erro ao tentar colocar a ordem de compra. Erro: ${e}`);
         }
@@ -120,40 +130,45 @@ setTimeout que chamará novamente a função.*/
         try {
           binance.sell(mercados[i], balanceVenda, venda);
 
-          //Atualizar os valores para enviar corretamente no e-mail
-          balances = await binance.getBalance();
-          openOrders = await binance.openOrders();
-          availableUSDT = parseFloat(balances.USDT.available);
-          estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
+          //Aguarda alguns segundos para ter os valores atualizados após a compra
+          setTimeout(async()=>{
+            //Atualizar os valores para enviar corretamente no e-mail
+            balances = await binance.getBalance();
+            openOrders = await binance.openOrders();
+            availableUSDT = parseFloat(balances.USDT.available);
+            estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
 
-          controllers.sendMail(
-            `Ordem de VENDA em ${mercados[i]} colocada!<br><br>
-            Preço estipulado: ${venda}<br>
-            Montante ${mercados[i].replace('USDT')}: ${balanceVenda}<br>
-            USDT Disponível: ${availableUSDT}<br>
-            USDT Total Estimado: ${estimatedTotalUSDT}<br>
-            Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
-            Livro de compras (bids):<br>${controllers.formatarLivro(depth.bids)}`
-          );
+            controllers.sendMail(
+              `Ordem de VENDA em ${mercados[i]} colocada!<br><br>
+              Preço estipulado: ${venda}<br>
+              Montante ${mercados[i].replace('USDT')}: ${balanceVenda}<br>
+              USDT Disponível: ${availableUSDT}<br>
+              USDT Total Estimado: ${estimatedTotalUSDT}<br>
+              Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
+              Livro de compras (bids):<br>${controllers.formatarLivro(depth.bids)}`
+            );
+          },2000)
         } catch (e) {
           controllers.sendMail(`Erro ao tentar colocar a ordem de venda. Erro: ${e}`);
         }
       }
 
-      //Verificar se houve alguma ordem de compra/venda no valor que foi estipulado
-      let recentTraders = await binance.getTradesList(mercados[i]),
-      [ordemExecutada, tipoOrdem, dadosOrdem] = controllers.checkTradesList(recentTraders, compra, venda);
+      if(config.wasThereOrder){
+        //Verificar se houve alguma ordem de compra/venda no valor que foi estipulado
+        let recentTraders = await binance.getTradesList(mercados[i]),
+        [ordemExecutada, tipoOrdem, dadosOrdem] = controllers.checkTradesList(recentTraders, compra, venda);
 
-      if(ordemExecutada && moedaParaVender != "" || ordemExecutada && tipoOrdem=="Compra"){
-        //isBuyerMaker false == ordem de compra
-        //isBuyerMaker true == ordem de venda
-        controllers.sendMail(`
-          Houve uma ordem de ${tipoOrdem} em ${mercados[i]}!<br>
-          Preço: ${dadosOrdem.price}<br>
-          Quantidade: ${dadosOrdem.qty}<br><br>
-          Preços estipulados:<br>
-          Compra: ${compra} | Venda: ${venda}
-        `)
+        if(ordemExecutada && moedaParaVender != "" || ordemExecutada && tipoOrdem=="Compra"){
+          //isBuyerMaker false == ordem de compra
+          //isBuyerMaker true == ordem de venda
+          controllers.sendMail(`
+            Houve uma ordem de ${tipoOrdem} em ${mercados[i]}!<br>
+            Preço: ${dadosOrdem.price}<br>
+            Quantidade: ${dadosOrdem.qty}<br><br>
+            Preços estipulados:<br>
+            Compra: ${compra} | Venda: ${venda}
+          `)
+        }
       }
 
       controllers.showOpenOrders(
@@ -165,11 +180,12 @@ setTimeout que chamará novamente a função.*/
         prevDay.lastPrice,
         openOrders
       )
+      config.strategy === 5 && console.log(`Last MACD: ${lastMACD}`)
       
     }
     catch(e){
       console.log("Something went wrong: " +e)
     }
   }
-  setTimeout(repeat, 1000)
+  setTimeout(repeat, 2000)
 })()

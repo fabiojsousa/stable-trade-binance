@@ -87,6 +87,9 @@ class Requests{
     let candle = ["openTime", "open", "high", "low", "close", "volume", "closeTime", "quoteAssetVolume", "numberOfTrades",
       "takerBuyBaseAssetVolume", "takerBuyQuoteAssetVolume", "ignore"], candleData = {}, data, myParams;
 
+    for(let i in candle)
+      candleData[candle[i]]=[]
+
     let lastHour = new Date().getUTCHours()-1
 
     if(lastCandle){
@@ -100,7 +103,8 @@ class Requests{
     else
       myParams = {
         symbol,
-        interval: "1h",
+        interval: "30m",
+        limit: 1000
       }
 
     try{
@@ -112,7 +116,7 @@ class Requests{
 
       for (let i=0; i < data.length; i++)
         for(let j=0; j < data[i].length; j++)
-          candleData[candle[j]] = data[i][j]
+          candleData[candle[j]].push(data[i][j])
 
       return candleData
 
