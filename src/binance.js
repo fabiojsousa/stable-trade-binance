@@ -1,14 +1,14 @@
 const crypto = require('crypto');
-const axios = require('axios')
+const axiosModule = require('axios')
 const config = require('./config.json')
 
 const {apiKey, secretKey} = config
 
-//Add header with apiKey for all requests
-axios.defaults.headers.common['X-MBX-APIKEY'] = apiKey
-
-//Add baseUrl for all requests
-axios.defaults.baseURL = 'https://api.binance.com'
+const axios = axiosModule.create({
+  baseURL: 'https://api.binance.com',
+  timeout: 10000,
+  headers: {'X-MBX-APIKEY': apiKey}
+})
 
 class Requests{
 

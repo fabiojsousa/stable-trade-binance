@@ -183,8 +183,9 @@ class MainControllers {
       if(timeTobuy){
         let {lastPrice} = await binance.getPrice(mercados[indice])
 
-        compra = lastPrice
-        venda = parseFloat(compra) + config.spread
+        compra = ajuste(lastPrice, 4)
+        venda = parseFloat(compra) + mercados[indice] === "USDSBUSDT" ? config.spread*10 : config.spread
+        venda = ajuste(venda, 4)
 
         return [compra, venda]
       }

@@ -10,7 +10,7 @@ const topoMaximo = 1.008
 
 let availableUSDT = "loading...";
 let estimatedTotalUSDT = "loading...";
-const mercados = ["TUSDUSDT", "USDCUSDT", "USDSUSDT", "PAXUSDT"];
+const mercados = ["USDSBUSDT", "TUSDUSDT", "USDCUSDT", "USDSUSDT", "PAXUSDT"];
 
 const minimumTrade = 12
 let percentualLucro = "loading..."
@@ -35,7 +35,7 @@ setTimeout que chamará novamente a função.*/
       let {lastMACD} = await controllers.getBestPrice(ajusteCompra, ajustVenda, mercados, i, topoMaximo)
 
       if(lastMACD){
-        compra=0, venda=0
+        compra=0, venda= 0
       } else {
           let [bestBuy, bestSell] = await controllers.getBestPrice(ajusteCompra, ajustVenda, mercados, i, topoMaximo)
           compra = bestBuy, venda = bestSell
@@ -91,27 +91,26 @@ setTimeout que chamará novamente a função.*/
           binance.buy(mercados[i], buyAmount, buyPrice)
 
           //Aguarda alguns segundos para ter os valores atualizados após a compra
-          setTimeout(async()=>{
-            //Atualizar os valores após a compra
-            balances = await binance.getBalance();
-            openOrders = await binance.openOrders();
-            availableUSDT = parseFloat(balances.USDT.available);
-            estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
 
-            //Verficar qual foi a moeda comprada para efetuar a venda logo em seguida
-            moedaParaVender = controllers.discoverCoinToSell(balances, minimumTrade);
+          //Atualizar os valores após a compra
+          balances = await binance.getBalance();
+          openOrders = await binance.openOrders();
+          availableUSDT = parseFloat(balances.USDT.available);
+          estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
 
-            controllers.sendMail(
-              `Ordem de COMPRA em ${mercados[i]} colocada!<br><br>
-              Preço estipulado: ${compra}<br>
-              Preço considerado: ${buyPrice}<br>
-              Montante ${mercados[i].replace('USDT')}: ${buyAmount}<br>
-              USDT Disponível: ${availableUSDT}<br>
-              USDT Total Estimado: ${estimatedTotalUSDT}<br>
-              Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
-              Livro de vendas (asks):<br>${controllers.formatarLivro(depth.asks)}`
-            );
-          }, 2000)
+          //Verficar qual foi a moeda comprada para efetuar a venda logo em seguida
+          moedaParaVender = controllers.discoverCoinToSell(balances, minimumTrade);
+
+          controllers.sendMail(
+            `Ordem de COMPRA em ${mercados[i]} colocada!<br><br>
+            Preço estipulado: ${compra}<br>
+            Preço considerado: ${buyPrice}<br>
+            Montante ${mercados[i].replace('USDT','')}: ${buyAmount}<br>
+            USDT Disponível: ${availableUSDT}<br>
+            USDT Total Estimado: ${estimatedTotalUSDT}<br>
+            Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
+            Livro de vendas (asks):<br>${controllers.formatarLivro(depth.asks)}`
+          );
         } catch (e) {
           controllers.sendMail(`Erro ao tentar colocar a ordem de compra. Erro: ${e}`);
         }
@@ -130,24 +129,21 @@ setTimeout que chamará novamente a função.*/
         try {
           binance.sell(mercados[i], balanceVenda, venda);
 
-          //Aguarda alguns segundos para ter os valores atualizados após a compra
-          setTimeout(async()=>{
-            //Atualizar os valores para enviar corretamente no e-mail
-            balances = await binance.getBalance();
-            openOrders = await binance.openOrders();
-            availableUSDT = parseFloat(balances.USDT.available);
-            estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
+          //Atualizar os valores para enviar corretamente no e-mail
+          balances = await binance.getBalance();
+          openOrders = await binance.openOrders();
+          availableUSDT = parseFloat(balances.USDT.available);
+          estimatedTotalUSDT = controllers.calcularSaldo(balances, openOrders);
 
-            controllers.sendMail(
-              `Ordem de VENDA em ${mercados[i]} colocada!<br><br>
-              Preço estipulado: ${venda}<br>
-              Montante ${mercados[i].replace('USDT')}: ${balanceVenda}<br>
-              USDT Disponível: ${availableUSDT}<br>
-              USDT Total Estimado: ${estimatedTotalUSDT}<br>
-              Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
-              Livro de compras (bids):<br>${controllers.formatarLivro(depth.bids)}`
-            );
-          },2000)
+          controllers.sendMail(
+            `Ordem de VENDA em ${mercados[i]} colocada!<br><br>
+            Preço estipulado: ${venda}<br>
+            Montante ${mercados[i].replace('USDT','')}: ${balanceVenda}<br>
+            USDT Disponível: ${availableUSDT}<br>
+            USDT Total Estimado: ${estimatedTotalUSDT}<br>
+            Último preço em ${mercados[i]}: ${prevDay.lastPrice}<br><br>
+            Livro de compras (bids):<br>${controllers.formatarLivro(depth.bids)}`
+          );
         } catch (e) {
           controllers.sendMail(`Erro ao tentar colocar a ordem de venda. Erro: ${e}`);
         }
