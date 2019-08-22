@@ -184,10 +184,13 @@ class MainControllers {
         let {lastPrice} = await binance.getPrice(mercados[indice])
 
         compra = ajuste(lastPrice, 4)
-        venda = parseFloat(compra) + mercados[indice] === "USDSBUSDT" ? config.spread*10 : config.spread
+        venda = parseFloat(compra) + config.spread
         venda = ajuste(venda, 4)
-
-        return [compra, venda]
+        
+        if(venda < topoMaximo)
+          return [compra, venda]
+        else
+          return {lastMACD: outMACD[i]}
       }
  
       return data.result.outMACD
