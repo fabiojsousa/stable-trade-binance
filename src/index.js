@@ -6,7 +6,7 @@ const config = require("./config")
 const ajusteCompra = 0.0035
 const ajustVenda = 0.0045
 /*============================================================================*/
-const topoMaximo = 1.008
+const topoMaximo = 1.009
 
 let availableUSDT = "loading...";
 let estimatedTotalUSDT = "loading...";
